@@ -13,9 +13,14 @@ use Statamic\Facades\Taxonomy;
 use Statamic\Facades\Term;
 use Statamic\Facades\User;
 
+use function Statamic\trans as __;
+
 /**
  * A usage as an editor reads it: the item's title, what it is part of, where to edit it.
  * Read from the item when a list is shown, so a renamed entry never shows an old title.
+ *
+ * Titles go through Statamic's translator, not Laravel's helper: a title that happens to name a
+ * language file ("Validation") would come back from that as the file's whole array.
  */
 class Describer
 {

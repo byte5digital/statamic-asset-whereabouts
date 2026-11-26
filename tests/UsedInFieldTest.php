@@ -109,6 +109,26 @@ class UsedInFieldTest extends TestCase
         $this->assertStringContainsString('Not used in any content.', $this->html($asset));
     }
 
+    public function test_the_editor_lists_the_opened_asset_not_one_its_own_fields_reference(): void
+    {
+        $this->blueprint('assets/images', [
+            'alt' => ['type' => 'text'],
+            'poster' => ['type' => 'assets', 'container' => 'images', 'max_files' => 1],
+        ]);
+        $this->asset('images', 'poster.jpg');
+        $video = $this->asset('images', 'video.jpg');
+        $video->set('poster', 'poster.jpg')->save();
+        $this->page(['title' => 'UsesVideo', 'image' => 'video.jpg']);
+        $this->page(['title' => 'UsesPoster', 'image' => 'poster.jpg']);
+
+        $shown = $this->getJson(cp_route('assets.show', base64_encode($video->id())))->assertOk()->json('data');
+        $field = collect($shown['blueprint']['tabs'])->flatMap(fn ($tab) => $tab['sections'])->flatMap(fn ($section) => $section['fields'])
+            ->firstWhere('handle', self::FIELD);
+
+        $this->assertStringContainsString('UsesVideo', $field['html']);
+        $this->assertStringNotContainsString('UsesPoster', $field['html']);
+    }
+
     public function test_the_asset_editor_gets_the_list_and_saving_stores_nothing_of_it(): void
     {
         $asset = $this->asset('images', 'a.jpg');

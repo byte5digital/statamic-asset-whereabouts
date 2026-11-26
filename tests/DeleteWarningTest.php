@@ -137,6 +137,17 @@ class DeleteWarningTest extends TestCase
         $this->assertStringNotContainsString('|', $warning);
     }
 
+    public function test_a_title_that_names_a_language_file_is_no_translation_key(): void
+    {
+        // __('Validation') is Laravel's whole validation group, an array.
+        Collection::find('pages')->title('Validation')->save();
+        $asset = $this->asset('images', 'a.jpg');
+        $this->page(['title' => 'Start', 'image' => 'a.jpg']);
+
+        $this->assertStringContainsString('Validation › Start', $this->warning([$asset]));
+        $this->assertStringContainsString('Validation', $asset->blueprint()->field('whereabouts_used_in')->toPublishArray()['html']);
+    }
+
     public function test_the_warning_loads_no_content(): void
     {
         $asset = $this->asset('images', 'a.jpg');

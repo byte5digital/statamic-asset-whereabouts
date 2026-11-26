@@ -60,6 +60,16 @@ class CollectorTest extends TestCase
         ]));
     }
 
+    public function test_a_path_in_text_is_read_as_statamic_replaces_it(): void
+    {
+        $this->assertSame(['images::my file.jpg', "images::o'brien.jpg"], $this->references([
+            'notes' => "A [file](statamic://asset::images::my file.jpg), an ![image](statamic://asset::images::o'brien.jpg).",
+        ]));
+        $this->assertSame(['images::plain.jpg'], $this->references([
+            'notes' => 'See <a href="statamic://asset::images::plain.jpg">this</a>, then go on.',
+        ]));
+    }
+
     public function test_a_bard_image_and_link(): void
     {
         $this->assertSame(['images::a.jpg', 'images::b.jpg'], $this->references(['body' => [

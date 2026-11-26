@@ -25,7 +25,11 @@ use Statamic\Fieldtypes\Markdown;
  */
 class Collector extends DataReferenceUpdater
 {
-    private const EXPLICIT = '/asset::([^:\s"\'()<>]+)::([^\s"\'()<>]+)/';
+    /**
+     * A link in text, as Statamic's own replacing finds it (UpdatesReferences::replaceStatamicUrls()):
+     * statamic://asset::container::path between a parenthesis or quote and the next one.
+     */
+    private const IN_TEXT = '/[("]statamic:\/\/asset::([^()":]+)::([^)"]*)[)"]/i';
 
     /** @var array<string, true> */
     private array $found = [];
@@ -71,8 +75,8 @@ class Collector extends DataReferenceUpdater
         match (true) {
             $fieldtype instanceof Assets => $this->readPaths($this->containerOf($field), $value),
             $fieldtype instanceof Link => $this->readWhole($value),
-            $fieldtype instanceof Bard => is_string($value) ? $this->readExplicit($value) : $this->readBard($value),
-            $fieldtype instanceof Markdown => is_string($value) ? $this->readExplicit($value) : null,
+            $fieldtype instanceof Bard => is_string($value) ? $this->readText($value) : $this->readBard($value),
+            $fieldtype instanceof Markdown => is_string($value) ? $this->readText($value) : null,
             default => null,
         };
     }
@@ -119,17 +123,19 @@ class Collector extends DataReferenceUpdater
         }
     }
 
-    /** Every "asset::container::path" in a string, with or without the statamic:// scheme. */
-    private function readExplicit(string $value): void
+    /** Every link to an asset in Markdown or in Bard saved as HTML. */
+    private function readText(string $value): void
     {
         if (! str_contains($value, 'asset::')) {
             return;
         }
 
-        preg_match_all(self::EXPLICIT, $value, $matches, PREG_SET_ORDER);
+        preg_match_all(self::IN_TEXT, $value, $matches, PREG_SET_ORDER);
 
         foreach ($matches as [, $container, $path]) {
-            $this->found[$container.'::'.$path] = true;
+            if ($path !== '') {
+                $this->found[$container.'::'.$path] = true;
+            }
         }
     }
 

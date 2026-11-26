@@ -68,8 +68,9 @@ class MapBuilder
                 $this->record(Kind::Entry, $id, $site, $entry->values(), $entry->blueprint(), $title, $in);
 
                 // A draft that alone holds the asset: deleting the asset would empty the draft too.
-                if ($entry->revisionsEnabled() && $entry->hasWorkingCopy()) {
-                    $draft = $entry->makeFromRevision($entry->workingCopy());
+                // Asked for once: a lookup per entry of a collection with revisions.
+                if ($entry->revisionsEnabled() && ($workingCopy = $entry->workingCopy()) !== null) {
+                    $draft = $entry->makeFromRevision($workingCopy);
                     $this->record(Kind::Entry, $id, $site, $draft->values(), $entry->blueprint(), $title, $in);
                 }
             });

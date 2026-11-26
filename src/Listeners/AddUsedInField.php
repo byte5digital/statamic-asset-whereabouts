@@ -23,7 +23,7 @@ class AddUsedInField
 {
     public const HANDLE = 'whereabouts_used_in';
 
-    /** The Blink key of the asset whose blueprint was asked for last in this request. */
+    /** The Blink key of the asset whose blueprint was asked for first in this request. */
     public const OPENED = 'whereabouts.opened-asset';
 
     public function handle(AssetContainerBlueprintFound $event): void
@@ -34,9 +34,12 @@ class AddUsedInField
             return;
         }
 
-        // The editor's form is built from the blueprint's tabs, whose fields know no parent:
-        // the fieldtype asks here which asset is being opened.
-        Blink::put(self::OPENED, $asset);
+        // The editor's form is built from the blueprint's tabs, whose fields know no parent: the
+        // fieldtype asks here which asset is being opened. The first one asked for in a request -
+        // building the form of an asset that references others asks for theirs afterwards.
+        if (! Blink::has(self::OPENED)) {
+            Blink::put(self::OPENED, $asset);
+        }
 
         $blueprint = $event->blueprint;
 
