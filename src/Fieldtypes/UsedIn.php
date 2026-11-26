@@ -55,10 +55,11 @@ class UsedIn extends Html
     {
         $asset = $this->field()?->parent();
         $asset = $asset instanceof Asset ? $asset : Blink::get(AddUsedInField::OPENED);
-        $describer = app(Describer::class);
+
+        $describer = resolve(Describer::class);
         $lines = [];
 
-        foreach ($asset instanceof Asset ? app(UsageMap::class)->usagesOf($asset) : [] as $usage) {
+        foreach ($asset instanceof Asset ? resolve(UsageMap::class)->usagesOf($asset) : [] as $usage) {
             if (($described = $describer->describe($usage)) !== null) {
                 $lines[] = $this->line($described);
             }
