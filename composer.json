@@ -8,6 +8,7 @@
         "assets",
         "usage"
     ],
+    "license": "GPL-3.0-or-later",
     "homepage": "https://github.com/byte5digital/whereabouts",
     "support": {
         "issues": "https://github.com/byte5digital/whereabouts/issues",

@@ -104,3 +104,7 @@ English, German, French and Italian; the control panel shows the editor's.
 composer install
 composer check    # Pint, PHPStan, Rector (dry run), PHPUnit
 ```
+
+## License
+
+GPL-3.0-or-later, see [LICENSE](LICENSE).
