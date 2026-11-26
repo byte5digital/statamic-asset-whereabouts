@@ -105,6 +105,12 @@ composer install
 composer check    # Pint, PHPStan, Rector (dry run), PHPUnit
 ```
 
+## Releases
+
+Versions are cut by [release-please](https://github.com/googleapis/release-please): commits on `main` follow
+[Conventional Commits](https://www.conventionalcommits.org), a release pull request collects them, and merging it
+tags the version and writes `CHANGELOG.md`.
+
 ## License
 
 GPL-3.0-or-later, see [LICENSE](LICENSE).
