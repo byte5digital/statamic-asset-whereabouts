@@ -1,0 +1,70 @@
+{
+    "name": "byte5/whereabouts",
+    "description": "Shows where an asset is used and warns before one in use is deleted.",
+    "type": "statamic-addon",
+    "keywords": [
+        "statamic",
+        "statamic-addon",
+        "assets",
+        "usage"
+    ],
+    "authors": [
+        {
+            "name": "byte5 GmbH",
+            "email": "info@byte5.de"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "statamic/cms": "^6.44"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^10.8 || ^11.0",
+        "laravel/pint": "^1.0",
+        "larastan/larastan": "^3.9",
+        "rector/rector": "^2.3",
+        "driftingly/rector-laravel": "^2.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Byte5\\Whereabouts\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Byte5\\Whereabouts\\Tests\\": "tests"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "lint": "pint",
+        "lint:check": "pint --test",
+        "stan": "phpstan analyse --memory-limit=1G",
+        "rector": "rector process",
+        "rector:check": "rector process --dry-run",
+        "check": [
+            "@lint:check",
+            "@stan",
+            "@rector:check",
+            "@test"
+        ]
+    },
+    "config": {
+        "allow-plugins": {
+            "pixelfear/composer-dist-plugin": true
+        }
+    },
+    "extra": {
+        "statamic": {
+            "name": "Whereabouts",
+            "description": "Shows where an asset is used and warns before one in use is deleted"
+        },
+        "laravel": {
+            "providers": [
+                "Byte5\\Whereabouts\\ServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
