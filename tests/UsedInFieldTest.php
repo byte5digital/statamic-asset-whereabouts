@@ -94,8 +94,10 @@ class UsedInFieldTest extends TestCase
 
         $html = $this->html($asset);
 
-        // One branch per collection (or kind), its heading with the number of places, its entries under it.
-        $this->assertSame(3, substr_count($html, '<details'));
+        // A root with the number of all places, then one branch per collection (or kind), its heading
+        // with its own number, its entries under it.
+        $this->assertSame(4, substr_count($html, '<details'));
+        $this->assertMatchesRegularExpression('#^<details open[^>]*><summary[^>]*>All places <span[^>]*>\(4\)</span></summary>.*</details>$#s', $html);
         $this->assertMatchesRegularExpression('#<summary[^>]*>.*Pages.*\(2\).*</summary>.*Start.*About.*</details>.*<summary[^>]*>.*News.*\(1\).*</summary>.*Fair.*</details>.*<summary[^>]*>.*Global set.*\(1\).*</summary>.*Settings.*</details>#s', $html);
         // The collection is the branch, so a line no longer repeats it.
         $this->assertSame(1, substr_count($html, 'Pages'));
@@ -108,11 +110,13 @@ class UsedInFieldTest extends TestCase
         $this->page(['title' => 'Start', 'image' => 'a.jpg', 'document' => 'a.pdf']);
         config(['whereabouts.containers' => ['images', 'files' => ['branches' => 'collapsed']]]);
 
-        $this->assertStringContainsString('<details open', $this->html($image));
+        $this->assertSame(2, substr_count($this->html($image), '<details open'), 'the root and its branch');
 
+        // The root stays open, so the branches' headings show; the branches are folded.
         $collapsed = $this->html($file);
-        $this->assertStringContainsString('<details', $collapsed);
-        $this->assertStringNotContainsString('<details open', $collapsed);
+        $this->assertSame(2, substr_count($collapsed, '<details'));
+        $this->assertSame(1, substr_count($collapsed, '<details open'));
+        $this->assertStringStartsWith('<details open', $collapsed);
         $this->assertStringContainsString('Start', $collapsed);
     }
 

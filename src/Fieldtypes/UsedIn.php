@@ -53,8 +53,8 @@ class UsedIn extends Html
     }
 
     /**
-     * A tree: one branch per collection, taxonomy or kind of content, in the order the usages
-     * come, each with the number of places and the entries under it. Branches are the browser's
+     * A tree: a root with the number of all places, under it one branch per collection, taxonomy
+     * or kind of content, in the order the usages come, each with its number and its entries. Branches are the browser's
      * own <details>, so an editor can fold a long one away; a container's setting decides whether
      * they start open (the default) or collapsed.
      */
@@ -81,16 +81,21 @@ class UsedIn extends Html
         }
 
         $open = ! Settings::collapsed((string) $asset->containerHandle());
+        $total = array_sum(array_map(count(...), $branches));
         $html = '';
 
         foreach ($branches as $usages) {
-            $html .= '<details'.($open ? ' open' : '').' style="margin:0 0 .5rem">'
+            $html .= '<details'.($open ? ' open' : '').' style="margin:.35rem 0 0 1.1rem">'
                 .'<summary style="cursor:pointer;font-weight:600">'.e($usages[0]['context']).' <span style="opacity:.6;font-weight:400">('.count($usages).')</span></summary>'
                 .'<ul style="list-style:none;margin:.25rem 0 0;padding:0 0 0 1.1rem">'.implode('', array_map($this->line(...), $usages)).'</ul>'
                 .'</details>';
         }
 
-        return $html;
+        // The root: every place together. Always open, so the branches' headings show.
+        return '<details open>'
+            .'<summary style="cursor:pointer;font-weight:600">'.e(__('whereabouts::messages.all_places')).' <span style="opacity:.6;font-weight:400">('.$total.')</span></summary>'
+            .$html
+            .'</details>';
     }
 
     private function notUsed(): string

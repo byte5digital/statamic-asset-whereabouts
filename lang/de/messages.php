@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'used_in' => 'Verwendet in',
     'not_used' => 'In keinem Inhalt verwendet.',
+    'all_places' => 'Alle Stellen',
     'all_sites' => 'alle Sites',
     'stays_after_delete' => 'bleibt nach dem Löschen bestehen',
     'kinds' => [

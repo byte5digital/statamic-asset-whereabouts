@@ -2,8 +2,8 @@
 
 A Statamic 6 addon that tells editors where an asset is used, and warns them before they delete one that is.
 
-- **"Used in" in the asset editor.** A tree of where the asset is used: one branch per collection, taxonomy or
-  kind of content with the number of places, and under it every entry, term, global set, user or navigation that
+- **"Used in" in the asset editor.** A tree of where the asset is used: a root with the number of all places,
+  one branch per collection, taxonomy or kind of content with its own number, and under it every entry, term, global set, user or navigation that
   references the asset, each linked to its edit page, with the sites it is used on.
 - **A warning in the delete dialog.** Deleting an asset that is in use says so and names the places - from the
   asset editor, a row's menu or a selection of several assets. Deleting stays possible.
