@@ -23,11 +23,11 @@ use Throwable;
  */
 class MapBuilder
 {
-    /** @var array<string, array<string, array{kind: Kind, id: string, sites: array<string, true>, title: string, in: string|null}>> */
+    /** @var array<string, array<string, array{kind: Kind, id: string, sites: array<string, true>, title: string, in: string|null, versions: array<string, array{id: string, title: string}>}>> */
     private array $map = [];
 
     /**
-     * @return array<string, list<array{kind: string, id: string, sites: list<string>, cleaned: bool, title: string, in: string|null}>> asset id => usages
+     * @return array<string, list<array{kind: string, id: string, sites: list<string>, cleaned: bool, title: string, in: string|null, versions?: array<string, array{id: string, title: string}>}>> asset id => usages
      */
     public function build(): array
     {
@@ -45,7 +45,7 @@ class MapBuilder
         foreach ($this->map as $assetId => $usages) {
             foreach ($usages as $usage) {
                 $sites = array_values(array_filter($order, fn (string $site): bool => isset($usage['sites'][$site])));
-                $result[$assetId][] = (new Usage($usage['kind'], $usage['id'], $sites, $usage['kind'] !== Kind::Nav, $usage['title'], $usage['in']))->toArray();
+                $result[$assetId][] = (new Usage($usage['kind'], $usage['id'], $sites, $usage['kind'] !== Kind::Nav, $usage['title'], $usage['in'], $usage['versions']))->toArray();
             }
         }
 
@@ -65,13 +65,16 @@ class MapBuilder
                 $title = (string) ($root->value('title') ?? $root->slug());
                 $in = (string) $entry->collectionHandle();
 
-                $this->record(Kind::Entry, $id, $site, $entry->values(), $entry->blueprint(), $title, $in);
+                // The localisation's own id and title: a list can show and link the version of the editor's site.
+                $version = ['id' => (string) $entry->id(), 'title' => (string) ($entry->value('title') ?? $title)];
+
+                $this->record(Kind::Entry, $id, $site, $entry->values(), $entry->blueprint(), $title, $in, $version);
 
                 // A draft that alone holds the asset: deleting the asset would empty the draft too.
                 // Asked for once: a lookup per entry of a collection with revisions.
                 if ($entry->revisionsEnabled() && ($workingCopy = $entry->workingCopy()) !== null) {
                     $draft = $entry->makeFromRevision($workingCopy);
-                    $this->record(Kind::Entry, $id, $site, $draft->values(), $entry->blueprint(), $title, $in);
+                    $this->record(Kind::Entry, $id, $site, $draft->values(), $entry->blueprint(), $title, $in, $version);
                 }
             });
         }
@@ -133,8 +136,11 @@ class MapBuilder
         }
     }
 
-    /** @param  Collection<array-key, mixed>  $data */
-    private function record(Kind $kind, string $id, ?string $site, Collection $data, ?Blueprint $blueprint, string $title, ?string $in = null): void
+    /**
+     * @param  Collection<array-key, mixed>  $data
+     * @param  array{id: string, title: string}|null  $version
+     */
+    private function record(Kind $kind, string $id, ?string $site, Collection $data, ?Blueprint $blueprint, string $title, ?string $in = null, ?array $version = null): void
     {
         if (! $blueprint instanceof Blueprint) {
             return;
@@ -142,10 +148,14 @@ class MapBuilder
 
         foreach (array_keys(Collector::item(new Subject($data, $blueprint))->references()) as $assetId) {
             $key = $kind->value.'|'.$id;
-            $this->map[$assetId][$key] ??= ['kind' => $kind, 'id' => $id, 'sites' => [], 'title' => $title, 'in' => $in];
+            $this->map[$assetId][$key] ??= ['kind' => $kind, 'id' => $id, 'sites' => [], 'title' => $title, 'in' => $in, 'versions' => []];
 
             if ($site !== null) {
                 $this->map[$assetId][$key]['sites'][$site] = true;
+            }
+
+            if ($site !== null && $version !== null) {
+                $this->map[$assetId][$key]['versions'][$site] = $version;
             }
         }
     }

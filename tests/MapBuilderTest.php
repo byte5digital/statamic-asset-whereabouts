@@ -21,7 +21,7 @@ class MapBuilderTest extends TestCase
     /** The usages of an asset without their titles. */
     private function bare(string $assetId): array
     {
-        return array_map(fn (array $usage) => array_diff_key($usage, ['title' => 0, 'in' => 0]), $this->build()[$assetId]);
+        return array_map(fn (array $usage) => array_diff_key($usage, ['title' => 0, 'in' => 0, 'versions' => 0]), $this->build()[$assetId]);
     }
 
     public function test_an_entry_is_listed_once_with_its_site(): void
@@ -29,7 +29,7 @@ class MapBuilderTest extends TestCase
         $page = $this->page(['title' => 'Start', 'image' => 'a.jpg']);
 
         $this->assertSame(
-            [['kind' => 'entry', 'id' => $page->id(), 'sites' => ['de'], 'cleaned' => true, 'title' => 'Start', 'in' => 'pages']],
+            [['kind' => 'entry', 'id' => $page->id(), 'sites' => ['de'], 'cleaned' => true, 'title' => 'Start', 'in' => 'pages', 'versions' => ['de' => ['id' => $page->id(), 'title' => 'Start']]]],
             $this->build()['images::a.jpg'],
         );
     }

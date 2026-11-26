@@ -12,6 +12,7 @@ use Statamic\Facades\Site;
 use Statamic\Facades\Taxonomy;
 use Statamic\Facades\Term;
 use Statamic\Facades\User;
+use Statamic\Support\Str;
 
 use function Statamic\trans as __;
 
@@ -53,19 +54,54 @@ class Describer
     }
 
     /**
-     * A usage in a few words, from the map alone - no content is loaded: "Pages › Start" for an
-     * entry or a term, the title for the rest. For texts built per row of the asset browser.
+     * The description of a usage from the map alone - no content is loaded: the title the map
+     * holds, the link built from handles and ids, shown where the user's role may edit that kind
+     * of content. For lists built per row of the asset browser (the delete dialog). An entry is
+     * shown and linked as describe() does: its version in the editor's site, from the map.
+     *
+     * @return array{title: string, context: string, url: string|null, sites: list<string>, cleaned: bool}
      */
-    public function label(Usage $usage): string
+    public function sketch(Usage $usage): array
     {
-        $group = match ($usage->kind) {
-            Kind::Entry => $usage->in === null ? null : Collection::findByHandle($usage->in)?->title(),
-            Kind::Term => $usage->in === null ? null : Taxonomy::findByHandle($usage->in)?->title(),
-            default => null,
-        };
-        $title = in_array($usage->kind, [Kind::GlobalSet, Kind::Nav], true) ? (string) __($usage->title) : $usage->title;
+        $site = $this->site($usage);
+        $in = (string) $usage->in;
+        $version = $site === null ? null : ($usage->versions[$site] ?? null);
 
-        return $group === null ? $title : __($group).' › '.$title;
+        [$context, $url, $permission] = match ($usage->kind) {
+            Kind::Entry => [
+                Collection::findByHandle($in)?->title() ?? $in,
+                cp_route('collections.entries.edit', [$in, $version['id'] ?? $usage->id]),
+                "edit {$in} entries",
+            ],
+            Kind::Term => [
+                Taxonomy::findByHandle($in)?->title() ?? $in,
+                cp_route('taxonomies.terms.edit', [$in, Str::after($usage->id, '::'), $site]),
+                "edit {$in} terms",
+            ],
+            Kind::GlobalSet => [
+                'whereabouts::messages.kinds.global',
+                cp_route('globals.variables.edit', array_filter(['global_set' => $usage->id, 'site' => $site])),
+                "edit {$usage->id} globals",
+            ],
+            Kind::User => [
+                'whereabouts::messages.kinds.user',
+                cp_route('users.edit', $usage->id),
+                'edit users',
+            ],
+            Kind::Nav => [
+                'whereabouts::messages.kinds.nav',
+                cp_route('navigation.show', array_filter(['navigation' => $usage->id, 'site' => $site])),
+                "edit {$usage->id} nav",
+            ],
+        };
+
+        return [
+            'title' => in_array($usage->kind, [Kind::GlobalSet, Kind::Nav], true) ? (string) __($usage->title) : ($version['title'] ?? $usage->title),
+            'context' => (string) __($context),
+            'url' => User::current()?->can($permission) ? (string) $url : null,
+            'sites' => array_map(fn (string $handle): string => (string) (Site::get($handle)?->name() ?? $handle), $usage->sites),
+            'cleaned' => $usage->cleaned,
+        ];
     }
 
     /** The site whose version of the item the link opens: the one the editor works in, where the usage has it. */

@@ -14,9 +14,8 @@ return [
         'nav' => 'Navigation',
     ],
     'warning' => [
-        'one_place' => 'Dieses Asset wird an :count Stelle verwendet: :titles. Beim Löschen wird es dort entfernt.',
-        'many_places' => 'Dieses Asset wird an :count Stellen verwendet: :titles. Beim Löschen wird es dort entfernt.',
-        'more' => 'und :count weitere',
+        'one_place' => 'Dieses Asset wird an :count Stelle verwendet. Beim Löschen wird es dort entfernt.',
+        'many_places' => 'Dieses Asset wird an :count Stellen verwendet. Beim Löschen wird es dort entfernt.',
         'bulk' => ':used der :selected ausgewählten Assets werden verwendet. Beim Löschen werden sie aus den Inhalten entfernt, die sie verwenden.',
     ],
 ];

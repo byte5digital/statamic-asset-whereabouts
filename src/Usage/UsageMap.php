@@ -22,7 +22,7 @@ class UsageMap
     /** A backstop: content events forget the map long before. */
     private const SECONDS = 86400;
 
-    /** @var array<string, list<array{kind: string, id: string, sites: list<string>, cleaned: bool, title: string, in: string|null}>>|null */
+    /** @var array<string, list<array{kind: string, id: string, sites: list<string>, cleaned: bool, title: string, in: string|null, versions?: array<string, array{id: string, title: string}>}>>|null */
     private ?array $map = null;
 
     public function __construct(private readonly MapBuilder $builder) {}
@@ -60,7 +60,7 @@ class UsageMap
         Cache::forget(self::CACHE_KEY);
     }
 
-    /** @return array<string, list<array{kind: string, id: string, sites: list<string>, cleaned: bool, title: string, in: string|null}>> */
+    /** @return array<string, list<array{kind: string, id: string, sites: list<string>, cleaned: bool, title: string, in: string|null, versions?: array<string, array{id: string, title: string}>}>> */
     private function map(): array
     {
         if ($this->map !== null) {

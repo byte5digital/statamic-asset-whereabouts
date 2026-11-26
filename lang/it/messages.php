@@ -14,9 +14,8 @@ return [
         'nav' => 'Navigazione',
     ],
     'warning' => [
-        'one_place' => 'Questo asset è usato in :count posto: :titles. Eliminandolo viene rimosso da lì.',
-        'many_places' => 'Questo asset è usato in :count posti: :titles. Eliminandolo viene rimosso da lì.',
-        'more' => 'e altri :count',
+        'one_place' => 'Questo asset è usato in :count posto. Eliminandolo viene rimosso da lì.',
+        'many_places' => 'Questo asset è usato in :count posti. Eliminandolo viene rimosso da lì.',
         'bulk' => ':used dei :selected asset selezionati sono in uso. Eliminandoli vengono rimossi dai contenuti che li usano.',
     ],
 ];

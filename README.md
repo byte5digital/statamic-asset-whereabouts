@@ -5,8 +5,9 @@ A Statamic 6 addon that tells editors where an asset is used, and warns them bef
 - **"Used in" in the asset editor.** A tree of where the asset is used: a root with the number of all places,
   one branch per collection, taxonomy or kind of content with its own number, and under it every entry, term, global set, user or navigation that
   references the asset, each linked to its edit page, with the sites it is used on.
-- **A warning in the delete dialog.** Deleting an asset that is in use says so and names the places - from the
-  asset editor, a row's menu or a selection of several assets. Deleting stays possible.
+- **A warning in the delete dialog.** Deleting an asset that is in use says so, with the number of places and,
+  for a single asset, the same tree with links - from the asset editor or a row's menu. A selection of several
+  assets says how many of them are in use. Deleting stays possible.
 
 No JavaScript, no control panel build, no database table, nothing written to disk.
 
@@ -55,7 +56,8 @@ An asset shown as unused can still be in use in one of these places.
 One pass over all content builds a map of asset → usages. The map is kept in the application's cache and
 forgotten whenever an entry, term, global set, user, navigation tree, asset or revision is saved or deleted; the
 next question builds it again. The asset browser asks for every row of a page, so within a request the map is
-read once and the delete warning loads no content at all.
+read once and the delete dialog - its sentence and its tree - loads no content at all: the map carries each
+usage's titles and ids. Links open in a new tab.
 
 The cache entry holds arrays and strings only. On a host where web and queue instances share no disk, use a
 shared cache store (Redis, database) - the default file store would give each instance its own map.

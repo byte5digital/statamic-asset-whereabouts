@@ -4,28 +4,58 @@ declare(strict_types=1);
 
 namespace Byte5\Whereabouts\Actions;
 
+use Byte5\Whereabouts\Settings;
 use Byte5\Whereabouts\Usage\Describer;
-use Byte5\Whereabouts\Usage\Usage;
+use Byte5\Whereabouts\Usage\Tree;
 use Byte5\Whereabouts\Usage\UsageMap;
 use Illuminate\Support\Collection;
 use Statamic\Actions\Delete as StatamicDelete;
 use Statamic\Contracts\Assets\Asset;
 
 /**
- * Statamic's delete action, with a warning where an asset that is in use is about to go.
+ * Statamic's delete action, with a warning where an asset that is in use is about to go: a
+ * sentence with the number of places and, for one asset, the tree of them with links.
  * Everything else - what it deletes, who may, every other item's dialog - is Statamic's.
  *
- * Statamic builds this text for every row while the asset browser lists a page, so it answers
- * from the usage map alone and loads no content.
+ * Statamic builds the warning and the dialog's fields for every row while the asset browser
+ * lists a page, so both come from the usage map alone and load no content.
  */
 class Delete extends StatamicDelete
 {
-    /** How many places a warning names before it counts the rest. */
-    private const NAMED = 5;
+    /** The handle of the dialog's field that lists the places. */
+    public const FIELD = 'whereabouts_usages';
 
     public function __construct(private readonly UsageMap $map, private readonly Describer $describer)
     {
         parent::__construct();
+    }
+
+    /**
+     * The dialog's body for one asset in use: the tree of its places, linked.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    protected function fieldItems()
+    {
+        $asset = $this->items->count() === 1 ? $this->items->first() : null;
+        $usages = $asset instanceof Asset ? $this->map->usagesOf($asset) : [];
+
+        if (! $asset instanceof Asset || $usages === []) {
+            return [];
+        }
+
+        return [
+            self::FIELD => [
+                'type' => 'html',
+                'display' => __('whereabouts::messages.used_in'),
+                'html' => Tree::render(
+                    array_map($this->describer->sketch(...), $usages),
+                    ! Settings::collapsed((string) $asset->containerHandle()),
+                    boxed: true,
+                ),
+                'sanitize' => false,
+            ],
+        ];
     }
 
     /** @return string|null */
@@ -48,27 +78,8 @@ class Delete extends StatamicDelete
             return __('whereabouts::messages.warning.bulk', ['used' => count($usages), 'selected' => $assets->count()]);
         }
 
-        return $this->forOne(array_values($usages)[0]);
-    }
+        $places = count(array_values($usages)[0]);
 
-    /** @param  list<Usage>  $usages */
-    private function forOne(array $usages): string
-    {
-        // The control panel's pluraliser splits a text at the pipe.
-        $titles = array_map(
-            fn (Usage $usage): string => str_replace('|', '/', $this->describer->label($usage)),
-            array_slice($usages, 0, self::NAMED),
-        );
-
-        $list = implode(', ', $titles);
-
-        if (($more = count($usages) - count($titles)) > 0) {
-            $list .= ' '.__('whereabouts::messages.warning.more', ['count' => $more]);
-        }
-
-        return __('whereabouts::messages.warning.'.(count($usages) === 1 ? 'one_place' : 'many_places'), [
-            'count' => count($usages),
-            'titles' => $list,
-        ]);
+        return __('whereabouts::messages.warning.'.($places === 1 ? 'one_place' : 'many_places'), ['count' => $places]);
     }
 }

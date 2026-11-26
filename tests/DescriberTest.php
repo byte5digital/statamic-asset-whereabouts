@@ -5,8 +5,12 @@ namespace Byte5\Whereabouts\Tests;
 use Byte5\Whereabouts\Usage\Describer;
 use Byte5\Whereabouts\Usage\Kind;
 use Byte5\Whereabouts\Usage\Usage;
+use Byte5\Whereabouts\Usage\UsageMap;
+use Statamic\Facades\GlobalSet;
 use Statamic\Facades\Nav;
 use Statamic\Facades\Site;
+use Statamic\Facades\Taxonomy;
+use Statamic\Facades\Term;
 use Statamic\Facades\User;
 
 class DescriberTest extends TestCase
@@ -69,6 +73,60 @@ class DescriberTest extends TestCase
         $this->assertNull($this->describe(new Usage(Kind::GlobalSet, 'gone', ['de'], true)));
         $this->assertNull($this->describe(new Usage(Kind::User, 'gone', [], true)));
         $this->assertNull($this->describe(new Usage(Kind::Nav, 'gone', ['de'], false)));
+    }
+
+    public function test_a_sketch_matches_the_description_without_loading_the_item(): void
+    {
+        // The user blueprint first: Statamic keeps the one it found when the first user was made.
+        $icon = ['icon' => ['type' => 'assets', 'container' => 'images', 'max_files' => 1]];
+        $this->blueprint('taxonomies/tags/tag', $icon);
+        $this->blueprint('globals/settings', $icon);
+        $this->blueprint('navigation/main', $icon);
+        $this->blueprint('user', $icon);
+        $this->actAs(super: true);
+        Taxonomy::make('tags')->title('Tags')->sites(['de', 'en'])->save();
+        Term::make()->taxonomy('tags')->slug('news')->blueprint('tag')->dataForLocale('de', ['title' => 'Neuigkeiten', 'icon' => 'a.jpg'])->save();
+        $set = GlobalSet::make('settings')->title('Settings')->sites(['de' => null, 'en' => 'de']);
+        $set->save();
+        $set->in('de')->data(['icon' => 'a.jpg'])->save();
+        $nav = Nav::make('main')->title('Main');
+        $nav->save();
+        $nav->makeTree('de', [['id' => 'n1', 'title' => 'Top', 'url' => '/top', 'data' => ['icon' => 'a.jpg']]])->save();
+        User::make()->email('jo@example.com')->data(['name' => 'Jo', 'icon' => 'a.jpg'])->save();
+        $this->page(['title' => 'Start', 'image' => 'a.jpg']);
+
+        $usages = app(UsageMap::class)->usagesOf($this->asset('images', 'a.jpg'));
+
+        $this->assertSame(['entry', 'term', 'global', 'user', 'nav'], array_map(fn (Usage $usage) => $usage->kind->value, $usages));
+        foreach ($usages as $usage) {
+            $this->assertSame($this->describe($usage), app(Describer::class)->sketch($usage), $usage->kind->value);
+        }
+    }
+
+    public function test_a_sketch_shows_and_links_the_version_in_the_editors_site(): void
+    {
+        $this->actAs(super: true);
+        $de = $this->page(['title' => 'Start', 'image' => 'a.jpg']);
+        $en = $this->page(['title' => 'Home'], 'en', $de);
+        [$usage] = app(UsageMap::class)->usagesOf($this->asset('images', 'a.jpg'));
+
+        $this->assertSame(['Start', $de->editUrl()], array_values(array_intersect_key(app(Describer::class)->sketch($usage), ['title' => 0, 'url' => 0])));
+
+        Site::setSelected('en');
+
+        $this->assertSame(['Home', $en->editUrl()], array_values(array_intersect_key(app(Describer::class)->sketch($usage), ['title' => 0, 'url' => 0])));
+        $this->assertSame($this->describe($usage), app(Describer::class)->sketch($usage));
+    }
+
+    public function test_a_sketch_has_no_url_without_the_permission(): void
+    {
+        $this->actAs(super: false);
+        $page = $this->page(['title' => 'Start']);
+
+        $sketch = app(Describer::class)->sketch(new Usage(Kind::Entry, $page->id(), ['de'], true, 'Start', 'pages'));
+
+        $this->assertNull($sketch['url']);
+        $this->assertSame(['Start', 'Pages'], [$sketch['title'], $sketch['context']]);
     }
 
     public function test_a_nav_is_described_as_navigation_and_not_cleaned(): void

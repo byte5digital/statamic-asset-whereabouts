@@ -14,9 +14,8 @@ return [
         'nav' => 'Navigation',
     ],
     'warning' => [
-        'one_place' => 'This asset is used in :count place: :titles. Deleting it removes it from there.',
-        'many_places' => 'This asset is used in :count places: :titles. Deleting it removes it from them.',
-        'more' => 'and :count more',
+        'one_place' => 'This asset is used in :count place. Deleting it removes it from there.',
+        'many_places' => 'This asset is used in :count places. Deleting it removes it from them.',
         'bulk' => ':used of the :selected selected assets are in use. Deleting them removes them from the content that uses them.',
     ],
 ];

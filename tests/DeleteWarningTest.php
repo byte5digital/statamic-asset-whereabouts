@@ -10,6 +10,7 @@ use Byte5\Whereabouts\Usage\UsageMap;
 use Statamic\Actions\Delete as StatamicDelete;
 use Statamic\Assets\AssetFolder;
 use Statamic\Facades\Action;
+use Statamic\Facades\Asset;
 use Statamic\Facades\AssetContainer;
 use Statamic\Facades\Collection;
 use Statamic\Facades\User;
@@ -43,10 +44,8 @@ class DeleteWarningTest extends TestCase
         $asset = $this->asset('images', 'a.jpg');
         $this->page(['title' => 'Start', 'image' => 'a.jpg']);
 
-        $this->assertSame(
-            'This asset is used in 1 place: Pages › Start. Deleting it removes it from there.',
-            $this->warning([$asset]),
-        );
+        $this->assertSame('This asset is used in 1 place. Deleting it removes it from there.', $this->warning([$asset]));
+        $this->assertStringContainsString('>Start</a>', $this->dialogFields($asset)['whereabouts_usages']['html']);
     }
 
     public function test_several_places_are_named(): void
@@ -56,23 +55,58 @@ class DeleteWarningTest extends TestCase
         $this->page(['title' => 'Two', 'image' => 'a.jpg']);
 
         $this->assertSame(
-            'This asset is used in 2 places: Pages › One, Pages › Two. Deleting it removes it from them.',
+            'This asset is used in 2 places. Deleting it removes it from them.',
             $this->warning([$asset]),
         );
     }
 
-    public function test_more_than_five_places_are_counted(): void
+    /** The dialog's fields as the control panel receives them for one item. */
+    private function dialogFields(object $item): array
+    {
+        return collect(Action::for($item)->first(fn ($action) => $action::handle() === 'delete')->toArray()['fields'])->keyBy('handle')->all();
+    }
+
+    public function test_the_dialog_lists_the_places_as_a_tree_of_links(): void
     {
         $asset = $this->asset('images', 'a.jpg');
-        foreach (range(1, 7) as $number) {
-            $this->page(['title' => "Page {$number}", 'image' => 'a.jpg']);
-        }
+        $one = $this->page(['title' => 'One', 'image' => 'a.jpg']);
+        $this->page(['title' => 'Two', 'image' => 'a.jpg']);
 
-        $warning = $this->warning([$asset]);
+        $fields = $this->dialogFields($asset);
 
-        $this->assertStringContainsString('7 places', $warning);
-        $this->assertSame(5, substr_count($warning, 'Pages › '));
-        $this->assertStringContainsString('and 2 more', $warning);
+        $this->assertSame(['whereabouts_usages'], array_keys($fields));
+        $this->assertSame('html', $fields['whereabouts_usages']['type']);
+        $html = $fields['whereabouts_usages']['html'];
+        $this->assertStringContainsString('All places', $html);
+        $this->assertStringContainsString('(2)', $html);
+        $this->assertStringContainsString('<a href="'.e($one->editUrl()).'" target="_blank" rel="noopener"', $html);
+        $this->assertStringContainsString('>Two</a>', $html);
+    }
+
+    public function test_an_unused_asset_a_selection_and_other_items_have_no_list(): void
+    {
+        $used = $this->asset('images', 'a.jpg');
+        $unused = $this->asset('images', 'b.jpg');
+        $this->page(['title' => 'Start', 'image' => 'a.jpg']);
+
+        $this->assertSame([], $this->dialogFields($unused));
+        $this->assertSame([], Action::forBulk(collect([$used, $unused]))->first(fn ($action) => $action::handle() === 'delete')->toArray()['fields']);
+        $this->assertSame([], app(Delete::class)->items([Collection::find('pages')])->toArray()['fields']);
+    }
+
+    public function test_the_delete_still_runs_with_the_list_in_the_dialog(): void
+    {
+        $asset = $this->asset('images', 'a.jpg');
+        $this->page(['title' => 'Start', 'image' => 'a.jpg']);
+
+        $this->postJson(cp_route('assets.actions.run'), [
+            'action' => 'delete',
+            'selections' => [$asset->id()],
+            'context' => ['container' => 'images'],
+            'values' => ['whereabouts_usages' => null],
+        ])->assertOk();
+
+        $this->assertNull(Asset::find('images::a.jpg'));
     }
 
     public function test_an_unused_asset_has_no_warning(): void
@@ -126,17 +160,6 @@ class DeleteWarningTest extends TestCase
         $this->assertSame($expected, app(Delete::class)->items([$collection])->warningText());
     }
 
-    public function test_a_title_with_a_pipe_does_not_break_the_text(): void
-    {
-        $asset = $this->asset('images', 'a.jpg');
-        $this->page(['title' => 'A | B', 'image' => 'a.jpg']);
-
-        $warning = $this->warning([$asset]);
-
-        $this->assertStringContainsString('A / B', $warning);
-        $this->assertStringNotContainsString('|', $warning);
-    }
-
     public function test_a_title_that_names_a_language_file_is_no_translation_key(): void
     {
         // __('Validation') is Laravel's whole validation group, an array.
@@ -144,11 +167,11 @@ class DeleteWarningTest extends TestCase
         $asset = $this->asset('images', 'a.jpg');
         $this->page(['title' => 'Start', 'image' => 'a.jpg']);
 
-        $this->assertStringContainsString('Validation › Start', $this->warning([$asset]));
+        $this->assertStringContainsString('Validation', $this->dialogFields($asset)['whereabouts_usages']['html']);
         $this->assertStringContainsString('Validation', $asset->blueprint()->field('whereabouts_used_in')->toPublishArray()['html']);
     }
 
-    public function test_the_warning_loads_no_content(): void
+    public function test_the_dialog_loads_no_content(): void
     {
         $asset = $this->asset('images', 'a.jpg');
         $this->page(['title' => 'Start', 'image' => 'a.jpg']);
@@ -163,10 +186,8 @@ class DeleteWarningTest extends TestCase
             }
         });
 
-        $this->assertSame(
-            'This asset is used in 1 place: Pages › Start. Deleting it removes it from there.',
-            $this->warning([$asset]),
-        );
+        $this->assertSame('This asset is used in 1 place. Deleting it removes it from there.', $this->warning([$asset]));
+        $this->assertStringContainsString('>Start</a>', $this->dialogFields($asset)['whereabouts_usages']['html']);
     }
 
     public function test_the_listing_asks_the_map_once(): void
