@@ -24,6 +24,7 @@ use Statamic\Events\TermDeleted;
 use Statamic\Events\TermSaved;
 use Statamic\Events\UserDeleted;
 use Statamic\Events\UserSaved;
+use Statamic\Facades\Permission;
 use Statamic\Providers\AddonServiceProvider;
 
 class ServiceProvider extends AddonServiceProvider
@@ -48,6 +49,16 @@ class ServiceProvider extends AddonServiceProvider
         RevisionSaved::class => [ForgetUsageMap::class],
         RevisionDeleted::class => [ForgetUsageMap::class],
     ];
+
+    public function bootAddon(): void
+    {
+        // A role may be allowed to delete assets that are in use, where a container asks for that.
+        Permission::extend(function (): void {
+            Permission::group('whereabouts', 'Whereabouts', function (): void {
+                Permission::register(Protection::PERMISSION)->label(__('whereabouts::messages.permission'));
+            });
+        });
+    }
 
     public function register(): void
     {

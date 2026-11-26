@@ -12,9 +12,12 @@ use Statamic\Facades\Site;
 use Statamic\Facades\Taxonomy;
 use Statamic\Facades\Term;
 use Statamic\Facades\User;
+use Statamic\Testing\Concerns\FakesRoles;
 
 class DescriberTest extends TestCase
 {
+    use FakesRoles;
+
     private function describe(Usage $usage): ?array
     {
         return app(Describer::class)->describe($usage);
@@ -127,6 +130,18 @@ class DescriberTest extends TestCase
 
         $this->assertNull($sketch['url']);
         $this->assertSame(['Start', 'Pages'], [$sketch['title'], $sketch['context']]);
+    }
+
+    public function test_a_sketch_links_what_the_users_role_may_edit(): void
+    {
+        $this->setTestRoles(['editor' => ['access cp', 'edit pages entries']]);
+        $user = User::make()->email('editor@example.com')->assignRole('editor');
+        $user->save();
+        $this->actingAs($user);
+        $page = $this->page(['title' => 'Start']);
+
+        $this->assertSame($page->editUrl(), app(Describer::class)->sketch(new Usage(Kind::Entry, $page->id(), ['de'], true, 'Start', 'pages'))['url']);
+        $this->assertNull(app(Describer::class)->sketch(new Usage(Kind::Entry, 'x', ['de'], true, 'Other', 'news'))['url']);
     }
 
     public function test_a_nav_is_described_as_navigation_and_not_cleaned(): void

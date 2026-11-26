@@ -74,11 +74,21 @@ php artisan vendor:publish --tag=whereabouts-config
 // The asset containers the addon acts on; null means every container.
 'containers' => [
     'images',
-    'files' => ['branches' => 'collapsed'],
+    'files' => ['branches' => 'collapsed', 'delete' => 'permission'],
 ],
 ```
 
 - A container left out gets neither the field nor the warning.
+- `delete` decides who may delete an asset of that container while it is in use:
+  - `warn` (the default): everybody who may delete assets, after the warning.
+  - `permission`: only roles with the **Delete assets that are in use** permission (group "Whereabouts" in the
+    role editor) and super users. Everybody else still sees the dialog with the places, but the sentence says
+    the asset can't be deleted and pressing "Delete" is refused with that message.
+  - `block`: nobody, super users included.
+
+  A selection that holds one such asset is refused as a whole, and so is a folder that holds one - nothing of
+  it is deleted. The rule is the dialog's: code that deletes an asset (a replace that drops the original, a
+  command) is not held back.
 - `branches` decides how the branches of the "Used in" tree start for that container's assets: `open` (the
   default, also when the option is missing) or `collapsed`, which shows only the headings with their counts.
 

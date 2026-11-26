@@ -25,6 +25,18 @@ final class Settings
     }
 
     /**
+     * Who may delete the container's assets that are in use: 'warn' - everybody who may delete
+     * assets, after the warning (the default) -, 'permission' - only users with the
+     * "delete assets in use" permission -, or 'block' - nobody.
+     */
+    public static function deletion(string $containerHandle): string
+    {
+        $mode = self::containers()[$containerHandle]['delete'] ?? 'warn';
+
+        return in_array($mode, ['permission', 'block'], true) ? $mode : 'warn';
+    }
+
+    /**
      * The listed containers with their options, by handle; null where the config lists none.
      *
      * @return array<string, array<array-key, mixed>>|null

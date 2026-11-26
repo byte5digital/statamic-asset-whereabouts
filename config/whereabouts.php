@@ -9,10 +9,13 @@ return [
     //
     //     'containers' => [
     //         'images',
-    //         'files' => ['branches' => 'collapsed'],
+    //         'files' => ['branches' => 'collapsed', 'delete' => 'permission'],
     //     ],
     //
     // branches: how the branches of the "Used in" tree start for the container's assets,
     //           'open' (the default) or 'collapsed'.
+    // delete:   who may delete an asset that is in use: 'warn' - everybody who may delete
+    //           assets, after the warning (the default) -, 'permission' - only roles with the
+    //           "Delete assets that are in use" permission -, or 'block' - nobody.
     'containers' => null,
 ];

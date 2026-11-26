@@ -18,4 +18,12 @@ return [
         'many_places' => 'Questo asset è usato in :count posti. Eliminandolo viene rimosso da lì.',
         'bulk' => ':used dei :selected asset selezionati sono in uso. Eliminandoli vengono rimossi dai contenuti che li usano.',
     ],
+    'permission' => 'Eliminare gli asset in uso',
+    'refused' => [
+        'one_place' => 'Questo asset è usato in :count posto e non può essere eliminato. Rimuovilo prima da lì.',
+        'many_places' => 'Questo asset è usato in :count posti e non può essere eliminato. Rimuovilo prima da lì.',
+        'bulk' => ':used dei :selected asset selezionati sono in uso e non possono essere eliminati. Rimuovili prima dai contenuti che li usano.',
+        'folder_one' => 'Questa cartella contiene :count asset in uso che non può essere eliminato. Rimuovilo prima dai contenuti che lo usano.',
+        'folder_many' => 'Questa cartella contiene :count asset in uso che non possono essere eliminati. Rimuovili prima dai contenuti che li usano.',
+    ],
 ];

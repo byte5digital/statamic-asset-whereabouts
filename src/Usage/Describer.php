@@ -98,7 +98,7 @@ class Describer
         return [
             'title' => in_array($usage->kind, [Kind::GlobalSet, Kind::Nav], true) ? (string) __($usage->title) : ($version['title'] ?? $usage->title),
             'context' => (string) __($context),
-            'url' => User::current()?->can($permission) ? (string) $url : null,
+            'url' => ($user = User::current()) !== null && ($user->isSuper() || $user->hasPermission($permission)) ? (string) $url : null,
             'sites' => array_map(fn (string $handle): string => (string) (Site::get($handle)?->name() ?? $handle), $usage->sites),
             'cleaned' => $usage->cleaned,
         ];
