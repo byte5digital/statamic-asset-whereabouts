@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Byte5\Whereabouts;
 
+use Byte5\Whereabouts\Actions\Delete;
 use Byte5\Whereabouts\Fieldtypes\UsedIn;
 use Byte5\Whereabouts\Listeners\AddUsedInField;
 use Byte5\Whereabouts\Listeners\ForgetUsageMap;
@@ -51,6 +52,9 @@ class ServiceProvider extends AddonServiceProvider
     public function register(): void
     {
         parent::register();
+
+        // Statamic resolves its actions through the container: ours takes the delete action's place.
+        $this->app->bind(\Statamic\Actions\Delete::class, Delete::class);
 
         // One per request: the asset browser asks for every row of a page.
         $this->app->singleton(UsageMap::class);

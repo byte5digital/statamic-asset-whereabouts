@@ -12,4 +12,10 @@ return [
         'user' => 'Utente',
         'nav' => 'Navigazione',
     ],
+    'warning' => [
+        'one_place' => 'Questo asset è usato in :count posto: :titles. Eliminandolo viene rimosso da lì.',
+        'many_places' => 'Questo asset è usato in :count posti: :titles. Eliminandolo viene rimosso da lì.',
+        'more' => 'e altri :count',
+        'bulk' => ':used dei :selected asset selezionati sono in uso. Eliminandoli vengono rimossi dai contenuti che li usano.',
+    ],
 ];
