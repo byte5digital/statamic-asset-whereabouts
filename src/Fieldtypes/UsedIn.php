@@ -51,25 +51,39 @@ class UsedIn extends Html
         return $key === null ? $config : ($config[$key] ?? $fallback);
     }
 
+    /**
+     * A tree: one branch per collection, taxonomy or kind of content, in the order the usages
+     * come, each with the number of places and the entries under it. Branches are the browser's
+     * own <details>, open from the start, so an editor can fold a long one away.
+     */
     private function list(): string
     {
         $asset = $this->field()?->parent();
         $asset = $asset instanceof Asset ? $asset : Blink::get(AddUsedInField::OPENED);
 
         $describer = resolve(Describer::class);
-        $lines = [];
+        $branches = [];
 
         foreach ($asset instanceof Asset ? resolve(UsageMap::class)->usagesOf($asset) : [] as $usage) {
             if (($described = $describer->describe($usage)) !== null) {
-                $lines[] = $this->line($described);
+                $branches[$usage->kind->value.'|'.$described['context']][] = $described;
             }
         }
 
-        if ($lines === []) {
+        if ($branches === []) {
             return '<p>'.e(__('whereabouts::messages.not_used')).'</p>';
         }
 
-        return '<ul style="list-style:none;margin:0;padding:0">'.implode('', $lines).'</ul>';
+        $html = '';
+
+        foreach ($branches as $usages) {
+            $html .= '<details open style="margin:0 0 .5rem">'
+                .'<summary style="cursor:pointer;font-weight:600">'.e($usages[0]['context']).' <span style="opacity:.6;font-weight:400">('.count($usages).')</span></summary>'
+                .'<ul style="list-style:none;margin:.25rem 0 0;padding:0 0 0 1.1rem">'.implode('', array_map($this->line(...), $usages)).'</ul>'
+                .'</details>';
+        }
+
+        return $html;
     }
 
     /** @param  array{title: string, context: string, url: string|null, sites: list<string>, cleaned: bool}  $usage */
@@ -78,7 +92,7 @@ class UsedIn extends Html
         $title = e($usage['title']);
         $title = $usage['url'] === null ? $title : '<a href="'.e($usage['url']).'" style="text-decoration:underline">'.$title.'</a>';
 
-        $details = [e($usage['context'])];
+        $details = [];
 
         if ($usage['sites'] !== [] && Site::all()->count() > 1) {
             $details[] = e(count($usage['sites']) === Site::all()->count()
@@ -86,8 +100,12 @@ class UsedIn extends Html
                 : implode(', ', $usage['sites']));
         }
 
-        $note = $usage['cleaned'] ? '' : ' ('.e(__('whereabouts::messages.stays_after_delete')).')';
+        if (! $usage['cleaned']) {
+            $details[] = e(__('whereabouts::messages.stays_after_delete'));
+        }
 
-        return '<li style="padding:.25rem 0">'.$title.' <span style="opacity:.7">· '.implode(' · ', $details).$note.'</span></li>';
+        $details = $details === [] ? '' : ' <span style="opacity:.7">· '.implode(' · ', $details).'</span>';
+
+        return '<li style="padding:.2rem 0">'.$title.$details.'</li>';
     }
 }

@@ -7,6 +7,9 @@ use Illuminate\Support\Facades\Cache;
 use Statamic\Contracts\Assets\Asset;
 use Statamic\Facades\AssetContainer;
 use Statamic\Facades\Blink;
+use Statamic\Facades\Collection;
+use Statamic\Facades\Entry;
+use Statamic\Facades\GlobalSet;
 use Statamic\Facades\User;
 
 class UsedInFieldTest extends TestCase
@@ -73,6 +76,29 @@ class UsedInFieldTest extends TestCase
         $this->assertStringContainsString('Pages', $html);
         $this->assertStringContainsString('Deutsch', $html);
         $this->assertStringNotContainsString('Not used', $html);
+    }
+
+    public function test_the_usages_are_a_tree_of_collections_and_their_entries(): void
+    {
+        $this->blueprint('collections/news/article', ['title' => ['type' => 'text'], 'image' => ['type' => 'assets', 'container' => 'images', 'max_files' => 1]]);
+        $this->blueprint('globals/settings', ['logo' => ['type' => 'assets', 'container' => 'images', 'max_files' => 1]]);
+        Collection::make('news')->title('News')->sites(['de', 'en'])->save();
+        $asset = $this->asset('images', 'a.jpg');
+        $this->page(['title' => 'Start', 'image' => 'a.jpg']);
+        $this->page(['title' => 'About', 'image' => 'a.jpg']);
+        $article = Entry::make()->id('article-1')->collection('news')->blueprint('article')->locale('de')->slug('fair')->data(['title' => 'Fair', 'image' => 'a.jpg']);
+        $article->save();
+        $set = GlobalSet::make('settings')->title('Settings')->sites(['de' => null, 'en' => 'de']);
+        $set->save();
+        $set->in('de')->data(['logo' => 'a.jpg'])->save();
+
+        $html = $this->html($asset);
+
+        // One branch per collection (or kind), its heading with the number of places, its entries under it.
+        $this->assertSame(3, substr_count($html, '<details'));
+        $this->assertMatchesRegularExpression('#<summary[^>]*>.*Pages.*\(2\).*</summary>.*Start.*About.*</details>.*<summary[^>]*>.*News.*\(1\).*</summary>.*Fair.*</details>.*<summary[^>]*>.*Global set.*\(1\).*</summary>.*Settings.*</details>#s', $html);
+        // The collection is the branch, so a line no longer repeats it.
+        $this->assertSame(1, substr_count($html, 'Pages'));
     }
 
     public function test_a_usage_on_every_site_says_all_sites(): void
