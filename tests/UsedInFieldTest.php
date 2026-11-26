@@ -129,6 +129,17 @@ class UsedInFieldTest extends TestCase
         $this->assertStringContainsString('all sites', $this->html($asset));
     }
 
+    public function test_the_german_list_says_websites_as_statamic_does(): void
+    {
+        $asset = $this->asset('images', 'a.jpg');
+        $de = $this->page(['title' => 'Start', 'image' => 'a.jpg']);
+        $this->page(['title' => 'Home'], 'en', $de);
+        app()->setLocale('de');
+
+        $this->assertStringContainsString('alle Websites', $this->html($asset));
+        $this->assertSame('Alle Websites', __('All sites'), "Statamic's own wording");
+    }
+
     public function test_a_title_is_escaped(): void
     {
         $asset = $this->asset('images', 'a.jpg');
