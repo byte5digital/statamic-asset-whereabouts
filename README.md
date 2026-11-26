@@ -13,11 +13,8 @@ No JavaScript, no control panel build, no database table, nothing written to dis
 
 ## Installation
 
-The package is not on Packagist. Install it from its GitHub repository:
-
 ```bash
-composer config repositories.whereabouts vcs https://github.com/byte5digital/statamic-asset-whereabouts
-composer require byte5/whereabouts:dev-main
+composer require byte5/whereabouts
 ```
 
 There is nothing to set up: no blueprint is edited, no command to run, no assets to publish.
