@@ -18,12 +18,18 @@ class MapBuilderTest extends TestCase
         return app(MapBuilder::class)->build();
     }
 
+    /** The usages of an asset without their titles. */
+    private function bare(string $assetId): array
+    {
+        return array_map(fn (array $usage) => array_diff_key($usage, ['title' => 0, 'in' => 0]), $this->build()[$assetId]);
+    }
+
     public function test_an_entry_is_listed_once_with_its_site(): void
     {
-        $page = $this->page(['image' => 'a.jpg']);
+        $page = $this->page(['title' => 'Start', 'image' => 'a.jpg']);
 
         $this->assertSame(
-            [['kind' => 'entry', 'id' => $page->id(), 'sites' => ['de'], 'cleaned' => true]],
+            [['kind' => 'entry', 'id' => $page->id(), 'sites' => ['de'], 'cleaned' => true, 'title' => 'Start', 'in' => 'pages']],
             $this->build()['images::a.jpg'],
         );
     }
@@ -35,7 +41,7 @@ class MapBuilderTest extends TestCase
 
         $this->assertSame(
             [['kind' => 'entry', 'id' => $de->id(), 'sites' => ['de', 'en'], 'cleaned' => true]],
-            $this->build()['images::a.jpg'],
+            $this->bare('images::a.jpg'),
         );
     }
 
@@ -43,10 +49,8 @@ class MapBuilderTest extends TestCase
     {
         $de = $this->page(['image' => 'a.jpg']);
         $this->page(['image' => 'b.jpg'], 'en', $de);
-        $map = $this->build();
-
-        $this->assertSame([['kind' => 'entry', 'id' => $de->id(), 'sites' => ['de'], 'cleaned' => true]], $map['images::a.jpg']);
-        $this->assertSame([['kind' => 'entry', 'id' => $de->id(), 'sites' => ['en'], 'cleaned' => true]], $map['images::b.jpg']);
+        $this->assertSame([['kind' => 'entry', 'id' => $de->id(), 'sites' => ['de'], 'cleaned' => true]], $this->bare('images::a.jpg'));
+        $this->assertSame([['kind' => 'entry', 'id' => $de->id(), 'sites' => ['en'], 'cleaned' => true]], $this->bare('images::b.jpg'));
     }
 
     public function test_an_unpublished_entry_counts(): void
@@ -68,7 +72,7 @@ class MapBuilderTest extends TestCase
         $this->assertNull($page->get('image'));
         $this->assertSame(
             [['kind' => 'entry', 'id' => $page->id(), 'sites' => ['de'], 'cleaned' => true]],
-            $this->build()['images::a.jpg'],
+            $this->bare('images::a.jpg'),
         );
     }
 
@@ -93,7 +97,7 @@ class MapBuilderTest extends TestCase
             ['kind' => 'term', 'id' => 'tags::news', 'sites' => ['de', 'en'], 'cleaned' => true],
             ['kind' => 'global', 'id' => 'settings', 'sites' => ['de', 'en'], 'cleaned' => true],
             ['kind' => 'user', 'id' => (string) $user->id(), 'sites' => [], 'cleaned' => true],
-        ], $this->build()['images::a.jpg']);
+        ], $this->bare('images::a.jpg'));
     }
 
     public function test_a_nav_item_is_listed_and_not_cleaned(): void
@@ -110,8 +114,22 @@ class MapBuilderTest extends TestCase
 
         $this->assertSame(
             [['kind' => 'nav', 'id' => 'main', 'sites' => ['de'], 'cleaned' => false]],
-            $this->build()['images::a.jpg'],
+            $this->bare('images::a.jpg'),
         );
+    }
+
+    public function test_a_usage_carries_its_title_and_where_it_belongs(): void
+    {
+        $this->blueprint('taxonomies/tags/tag', ['icon' => ['type' => 'assets', 'container' => 'images', 'max_files' => 1]]);
+        Taxonomy::make('tags')->sites(['de', 'en'])->save();
+        Term::make()->taxonomy('tags')->slug('news')->blueprint('tag')->dataForLocale('de', ['title' => 'Neuigkeiten', 'icon' => 'a.jpg'])->save();
+        $de = $this->page(['title' => 'Start', 'image' => 'a.jpg']);
+        $this->page(['title' => 'Home'], 'en', $de);
+
+        $usages = collect($this->build()['images::a.jpg'])->keyBy('kind');
+
+        $this->assertSame(['Start', 'pages'], [$usages['entry']['title'], $usages['entry']['in']], 'the root\'s title');
+        $this->assertSame(['Neuigkeiten', 'tags'], [$usages['term']['title'], $usages['term']['in']]);
     }
 
     public function test_an_asset_nobody_references_is_absent(): void

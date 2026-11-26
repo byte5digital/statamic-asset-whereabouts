@@ -3,7 +3,9 @@
 namespace Byte5\Whereabouts\Tests;
 
 use Byte5\Whereabouts\Actions\Delete;
+use Byte5\Whereabouts\Usage\Describer;
 use Byte5\Whereabouts\Usage\MapBuilder;
+use Byte5\Whereabouts\Usage\Usage;
 use Byte5\Whereabouts\Usage\UsageMap;
 use Statamic\Actions\Delete as StatamicDelete;
 use Statamic\Assets\AssetFolder;
@@ -133,6 +135,27 @@ class DeleteWarningTest extends TestCase
 
         $this->assertStringContainsString('A / B', $warning);
         $this->assertStringNotContainsString('|', $warning);
+    }
+
+    public function test_the_warning_loads_no_content(): void
+    {
+        $asset = $this->asset('images', 'a.jpg');
+        $this->page(['title' => 'Start', 'image' => 'a.jpg']);
+        app(UsageMap::class)->usagesOf($asset);
+
+        // The listing builds this text per row: it must come from the map alone.
+        $this->app->bind(Describer::class, fn () => new class extends Describer
+        {
+            public function describe(Usage $usage): ?array
+            {
+                throw new \LogicException('The warning loaded an item.');
+            }
+        });
+
+        $this->assertSame(
+            'This asset is used in 1 place: Pages › Start. Deleting it removes it from there.',
+            $this->warning([$asset]),
+        );
     }
 
     public function test_the_listing_asks_the_map_once(): void

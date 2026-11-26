@@ -76,7 +76,7 @@ class UsedIn extends Html
     private function line(array $usage): string
     {
         $title = e($usage['title']);
-        $title = $usage['url'] === null ? $title : '<a href="'.e($usage['url']).'">'.$title.'</a>';
+        $title = $usage['url'] === null ? $title : '<a href="'.e($usage['url']).'" style="text-decoration:underline">'.$title.'</a>';
 
         $details = [e($usage['context'])];
 

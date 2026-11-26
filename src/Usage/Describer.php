@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Byte5\Whereabouts\Usage;
 
+use Statamic\Facades\Collection;
 use Statamic\Facades\Entry;
 use Statamic\Facades\GlobalSet;
 use Statamic\Facades\Nav;
 use Statamic\Facades\Site;
+use Statamic\Facades\Taxonomy;
 use Statamic\Facades\Term;
 use Statamic\Facades\User;
 
@@ -43,6 +45,22 @@ class Describer
             'sites' => array_map(fn (string $handle): string => (string) (Site::get($handle)?->name() ?? $handle), $usage->sites),
             'cleaned' => $usage->cleaned,
         ];
+    }
+
+    /**
+     * A usage in a few words, from the map alone - no content is loaded: "Pages › Start" for an
+     * entry or a term, the title for the rest. For texts built per row of the asset browser.
+     */
+    public function label(Usage $usage): string
+    {
+        $group = match ($usage->kind) {
+            Kind::Entry => $usage->in === null ? null : Collection::findByHandle($usage->in)?->title(),
+            Kind::Term => $usage->in === null ? null : Taxonomy::findByHandle($usage->in)?->title(),
+            default => null,
+        };
+        $title = in_array($usage->kind, [Kind::GlobalSet, Kind::Nav], true) ? (string) __($usage->title) : $usage->title;
+
+        return $group === null ? $title : __($group).' › '.$title;
     }
 
     /** The site whose version of the item the link opens: the one the editor works in, where the usage has it. */

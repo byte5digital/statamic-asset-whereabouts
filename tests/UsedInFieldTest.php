@@ -69,7 +69,7 @@ class UsedInFieldTest extends TestCase
 
         $html = $this->html($asset);
 
-        $this->assertStringContainsString('<a href="'.e($page->editUrl()).'">Start</a>', $html);
+        $this->assertStringContainsString('<a href="'.e($page->editUrl()).'" style="text-decoration:underline">Start</a>', $html);
         $this->assertStringContainsString('Pages', $html);
         $this->assertStringContainsString('Deutsch', $html);
         $this->assertStringNotContainsString('Not used', $html);

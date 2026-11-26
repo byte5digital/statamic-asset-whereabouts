@@ -23,11 +23,11 @@ use Throwable;
  */
 class MapBuilder
 {
-    /** @var array<string, array<string, array{kind: Kind, id: string, sites: array<string, true>}>> */
+    /** @var array<string, array<string, array{kind: Kind, id: string, sites: array<string, true>, title: string, in: string|null}>> */
     private array $map = [];
 
     /**
-     * @return array<string, list<array{kind: string, id: string, sites: list<string>, cleaned: bool}>> asset id => usages
+     * @return array<string, list<array{kind: string, id: string, sites: list<string>, cleaned: bool, title: string, in: string|null}>> asset id => usages
      */
     public function build(): array
     {
@@ -45,7 +45,7 @@ class MapBuilder
         foreach ($this->map as $assetId => $usages) {
             foreach ($usages as $usage) {
                 $sites = array_values(array_filter($order, fn (string $site): bool => isset($usage['sites'][$site])));
-                $result[$assetId][] = (new Usage($usage['kind'], $usage['id'], $sites, $usage['kind'] !== Kind::Nav))->toArray();
+                $result[$assetId][] = (new Usage($usage['kind'], $usage['id'], $sites, $usage['kind'] !== Kind::Nav, $usage['title'], $usage['in']))->toArray();
             }
         }
 
@@ -59,15 +59,18 @@ class MapBuilder
     {
         foreach (Entry::query()->lazy() as $entry) {
             $this->guarded(function () use ($entry): void {
-                $id = (string) $entry->root()->id();
+                $root = $entry->root();
+                $id = (string) $root->id();
                 $site = (string) $entry->locale();
+                $title = (string) ($root->value('title') ?? $root->slug());
+                $in = (string) $entry->collectionHandle();
 
-                $this->record(Kind::Entry, $id, $site, $entry->values(), $entry->blueprint());
+                $this->record(Kind::Entry, $id, $site, $entry->values(), $entry->blueprint(), $title, $in);
 
                 // A draft that alone holds the asset: deleting the asset would empty the draft too.
                 if ($entry->revisionsEnabled() && $entry->hasWorkingCopy()) {
                     $draft = $entry->makeFromRevision($entry->workingCopy());
-                    $this->record(Kind::Entry, $id, $site, $draft->values(), $entry->blueprint());
+                    $this->record(Kind::Entry, $id, $site, $draft->values(), $entry->blueprint(), $title, $in);
                 }
             });
         }
@@ -76,7 +79,7 @@ class MapBuilder
     private function terms(): void
     {
         foreach (Term::query()->lazy() as $term) {
-            $this->guarded(fn () => $this->record(Kind::Term, (string) $term->id(), (string) $term->locale(), $term->values(), $term->blueprint()));
+            $this->guarded(fn () => $this->record(Kind::Term, (string) $term->id(), (string) $term->locale(), $term->values(), $term->blueprint(), (string) $term->title(), (string) $term->taxonomyHandle()));
         }
     }
 
@@ -84,7 +87,7 @@ class MapBuilder
     {
         foreach (GlobalSet::all() as $set) {
             foreach ($set->localizations() as $variables) {
-                $this->guarded(fn () => $this->record(Kind::GlobalSet, (string) $set->handle(), (string) $variables->locale(), $variables->values(), $set->blueprint()));
+                $this->guarded(fn () => $this->record(Kind::GlobalSet, (string) $set->handle(), (string) $variables->locale(), $variables->values(), $set->blueprint(), (string) $set->title()));
             }
         }
     }
@@ -92,7 +95,7 @@ class MapBuilder
     private function users(): void
     {
         foreach (User::query()->lazy() as $user) {
-            $this->guarded(fn () => $this->record(Kind::User, (string) $user->id(), null, $user->data(), $user->blueprint()));
+            $this->guarded(fn () => $this->record(Kind::User, (string) $user->id(), null, $user->data(), $user->blueprint(), (string) ($user->name() ?: $user->email())));
         }
     }
 
@@ -102,7 +105,7 @@ class MapBuilder
         foreach (Nav::all() as $nav) {
             foreach ($nav->trees() as $site => $tree) {
                 $this->guarded(function () use ($nav, $site, $tree): void {
-                    $this->branches($tree->tree(), fn (array $data) => $this->record(Kind::Nav, (string) $nav->handle(), (string) $site, collect($data), $nav->blueprint()));
+                    $this->branches($tree->tree(), fn (array $data) => $this->record(Kind::Nav, (string) $nav->handle(), (string) $site, collect($data), $nav->blueprint(), (string) $nav->title()));
                 });
             }
         }
@@ -130,7 +133,7 @@ class MapBuilder
     }
 
     /** @param  Collection<array-key, mixed>  $data */
-    private function record(Kind $kind, string $id, ?string $site, Collection $data, ?Blueprint $blueprint): void
+    private function record(Kind $kind, string $id, ?string $site, Collection $data, ?Blueprint $blueprint, string $title, ?string $in = null): void
     {
         if (! $blueprint instanceof Blueprint) {
             return;
@@ -138,7 +141,7 @@ class MapBuilder
 
         foreach (array_keys(Collector::item(new Subject($data, $blueprint))->references()) as $assetId) {
             $key = $kind->value.'|'.$id;
-            $this->map[$assetId][$key] ??= ['kind' => $kind, 'id' => $id, 'sites' => []];
+            $this->map[$assetId][$key] ??= ['kind' => $kind, 'id' => $id, 'sites' => [], 'title' => $title, 'in' => $in];
 
             if ($site !== null) {
                 $this->map[$assetId][$key]['sites'][$site] = true;

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Byte5\Whereabouts\Actions;
 
 use Byte5\Whereabouts\Usage\Describer;
-use Byte5\Whereabouts\Usage\Kind;
 use Byte5\Whereabouts\Usage\Usage;
 use Byte5\Whereabouts\Usage\UsageMap;
 use Illuminate\Support\Collection;
@@ -17,7 +16,7 @@ use Statamic\Contracts\Assets\Asset;
  * Everything else - what it deletes, who may, every other item's dialog - is Statamic's.
  *
  * Statamic builds this text for every row while the asset browser lists a page, so it answers
- * from the usage map and loads only the few items it names.
+ * from the usage map alone and loads no content.
  */
 class Delete extends StatamicDelete
 {
@@ -55,22 +54,11 @@ class Delete extends StatamicDelete
     /** @param  list<Usage>  $usages */
     private function forOne(array $usages): string
     {
-        $titles = [];
-
-        foreach ($usages as $usage) {
-            if (count($titles) === self::NAMED) {
-                break;
-            }
-
-            if (($described = $this->describer->describe($usage)) !== null) {
-                $title = in_array($usage->kind, [Kind::Entry, Kind::Term], true)
-                    ? $described['context'].' › '.$described['title']
-                    : $described['title'];
-
-                // The control panel's pluraliser splits a text at the pipe.
-                $titles[] = str_replace('|', '/', $title);
-            }
-        }
+        // The control panel's pluraliser splits a text at the pipe.
+        $titles = array_map(
+            fn (Usage $usage): string => str_replace('|', '/', $this->describer->label($usage)),
+            array_slice($usages, 0, self::NAMED),
+        );
 
         $list = implode(', ', $titles);
 
