@@ -20,6 +20,35 @@ class SettingsTest extends TestCase
         $this->assertFalse(Settings::includes('files'));
     }
 
+    public function test_a_container_may_be_listed_with_its_own_options(): void
+    {
+        config(['whereabouts.containers' => ['images', 'files' => ['branches' => 'collapsed']]]);
+
+        $this->assertTrue(Settings::includes('images'));
+        $this->assertTrue(Settings::includes('files'));
+        $this->assertFalse(Settings::includes('news'));
+    }
+
+    public function test_branches_start_open_unless_a_container_asks_for_collapsed(): void
+    {
+        $this->assertFalse(Settings::collapsed('images'), 'no list at all');
+
+        config(['whereabouts.containers' => [
+            'images',
+            'files' => ['branches' => 'collapsed'],
+            'news' => ['branches' => 'open'],
+            'videos' => [],
+            'icons' => ['branches' => 'sideways'],
+        ]]);
+
+        $this->assertFalse(Settings::collapsed('images'));
+        $this->assertTrue(Settings::collapsed('files'));
+        $this->assertFalse(Settings::collapsed('news'));
+        $this->assertFalse(Settings::collapsed('videos'), 'not set');
+        $this->assertFalse(Settings::collapsed('icons'), 'an unknown value');
+        $this->assertFalse(Settings::collapsed('uploads'), 'not listed');
+    }
+
     public function test_the_fixture_site_exists(): void
     {
         $this->assertSame(['de', 'en'], Site::all()->keys()->all());

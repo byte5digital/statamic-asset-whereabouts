@@ -101,6 +101,21 @@ class UsedInFieldTest extends TestCase
         $this->assertSame(1, substr_count($html, 'Pages'));
     }
 
+    public function test_a_container_decides_whether_its_branches_start_collapsed(): void
+    {
+        $image = $this->asset('images', 'a.jpg');
+        $file = $this->asset('files', 'a.pdf');
+        $this->page(['title' => 'Start', 'image' => 'a.jpg', 'document' => 'a.pdf']);
+        config(['whereabouts.containers' => ['images', 'files' => ['branches' => 'collapsed']]]);
+
+        $this->assertStringContainsString('<details open', $this->html($image));
+
+        $collapsed = $this->html($file);
+        $this->assertStringContainsString('<details', $collapsed);
+        $this->assertStringNotContainsString('<details open', $collapsed);
+        $this->assertStringContainsString('Start', $collapsed);
+    }
+
     public function test_a_usage_on_every_site_says_all_sites(): void
     {
         $asset = $this->asset('images', 'a.jpg');

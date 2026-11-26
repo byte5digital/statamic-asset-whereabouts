@@ -69,11 +69,16 @@ php artisan vendor:publish --tag=whereabouts-config
 `config/whereabouts.php`:
 
 ```php
-// The asset containers the addon acts on, by handle; null means every container.
-'containers' => null,
+// The asset containers the addon acts on; null means every container.
+'containers' => [
+    'images',
+    'files' => ['branches' => 'collapsed'],
+],
 ```
 
-A container left out gets neither the field nor the warning.
+- A container left out gets neither the field nor the warning.
+- `branches` decides how the branches of the "Used in" tree start for that container's assets: `open` (the
+  default, also when the option is missing) or `collapsed`, which shows only the headings with their counts.
 
 ## Languages
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Byte5\Whereabouts\Fieldtypes;
 
 use Byte5\Whereabouts\Listeners\AddUsedInField;
+use Byte5\Whereabouts\Settings;
 use Byte5\Whereabouts\Usage\Describer;
 use Byte5\Whereabouts\Usage\UsageMap;
 use Statamic\Contracts\Assets\Asset;
@@ -54,7 +55,8 @@ class UsedIn extends Html
     /**
      * A tree: one branch per collection, taxonomy or kind of content, in the order the usages
      * come, each with the number of places and the entries under it. Branches are the browser's
-     * own <details>, open from the start, so an editor can fold a long one away.
+     * own <details>, so an editor can fold a long one away; a container's setting decides whether
+     * they start open (the default) or collapsed.
      */
     private function list(): string
     {
@@ -64,26 +66,36 @@ class UsedIn extends Html
         $describer = resolve(Describer::class);
         $branches = [];
 
-        foreach ($asset instanceof Asset ? resolve(UsageMap::class)->usagesOf($asset) : [] as $usage) {
+        if (! $asset instanceof Asset) {
+            return $this->notUsed();
+        }
+
+        foreach (resolve(UsageMap::class)->usagesOf($asset) as $usage) {
             if (($described = $describer->describe($usage)) !== null) {
                 $branches[$usage->kind->value.'|'.$described['context']][] = $described;
             }
         }
 
         if ($branches === []) {
-            return '<p>'.e(__('whereabouts::messages.not_used')).'</p>';
+            return $this->notUsed();
         }
 
+        $open = ! Settings::collapsed((string) $asset->containerHandle());
         $html = '';
 
         foreach ($branches as $usages) {
-            $html .= '<details open style="margin:0 0 .5rem">'
+            $html .= '<details'.($open ? ' open' : '').' style="margin:0 0 .5rem">'
                 .'<summary style="cursor:pointer;font-weight:600">'.e($usages[0]['context']).' <span style="opacity:.6;font-weight:400">('.count($usages).')</span></summary>'
                 .'<ul style="list-style:none;margin:.25rem 0 0;padding:0 0 0 1.1rem">'.implode('', array_map($this->line(...), $usages)).'</ul>'
                 .'</details>';
         }
 
         return $html;
+    }
+
+    private function notUsed(): string
+    {
+        return '<p>'.e(__('whereabouts::messages.not_used')).'</p>';
     }
 
     /** @param  array{title: string, context: string, url: string|null, sites: list<string>, cleaned: bool}  $usage */
