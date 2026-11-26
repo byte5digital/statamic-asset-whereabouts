@@ -8,6 +8,11 @@
         "assets",
         "usage"
     ],
+    "homepage": "https://github.com/byte5digital/whereabouts",
+    "support": {
+        "issues": "https://github.com/byte5digital/whereabouts/issues",
+        "source": "https://github.com/byte5digital/whereabouts"
+    },
     "authors": [
         {
             "name": "byte5 GmbH",
