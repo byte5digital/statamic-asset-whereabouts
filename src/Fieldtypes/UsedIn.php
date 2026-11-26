@@ -102,7 +102,8 @@ class UsedIn extends Html
     private function line(array $usage): string
     {
         $title = e($usage['title']);
-        $title = $usage['url'] === null ? $title : '<a href="'.e($usage['url']).'" style="text-decoration:underline">'.$title.'</a>';
+        // The control panel's own accent colour for text: the theme the user picked, light or dark.
+        $title = $usage['url'] === null ? $title : '<a href="'.e($usage['url']).'" style="color:var(--theme-color-ui-accent-text);text-decoration:underline">'.$title.'</a>';
 
         $details = [];
 
