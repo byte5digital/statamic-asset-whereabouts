@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Byte5\Whereabouts;
 
+use Byte5\Whereabouts\Fieldtypes\UsedIn;
+use Byte5\Whereabouts\Listeners\AddUsedInField;
 use Byte5\Whereabouts\Listeners\ForgetUsageMap;
 use Byte5\Whereabouts\Usage\UsageMap;
+use Statamic\Events\AssetContainerBlueprintFound;
 use Statamic\Events\AssetDeleted;
 use Statamic\Events\AssetSaved;
 use Statamic\Events\EntryDeleted;
@@ -24,8 +27,11 @@ use Statamic\Providers\AddonServiceProvider;
 
 class ServiceProvider extends AddonServiceProvider
 {
+    protected $fieldtypes = [UsedIn::class];
+
     // Whatever can add, move or remove a reference to an asset forgets the usage map.
     protected $listen = [
+        AssetContainerBlueprintFound::class => [AddUsedInField::class],
         EntrySaved::class => [ForgetUsageMap::class],
         EntryDeleted::class => [ForgetUsageMap::class],
         TermSaved::class => [ForgetUsageMap::class],
