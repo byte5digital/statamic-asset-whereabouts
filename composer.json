@@ -9,10 +9,10 @@
         "usage"
     ],
     "license": "GPL-3.0-or-later",
-    "homepage": "https://github.com/byte5digital/whereabouts",
+    "homepage": "https://github.com/byte5digital/statamic-asset-whereabouts",
     "support": {
-        "issues": "https://github.com/byte5digital/whereabouts/issues",
-        "source": "https://github.com/byte5digital/whereabouts"
+        "issues": "https://github.com/byte5digital/statamic-asset-whereabouts/issues",
+        "source": "https://github.com/byte5digital/statamic-asset-whereabouts"
     },
     "authors": [
         {
